@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "@types/node": "^20.11.27"
+  },
+  "main": "./main.js",
+  "type": "commonjs",
+  "dependencies": {
+    "prompt-sync": "^4.2.0"
+  }
+}
