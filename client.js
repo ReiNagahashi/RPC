@@ -38,13 +38,12 @@ var Client = /** @class */ (function () {
                 console.log("Send Error: ", err);
             }
             else {
-                console.log("Request Sent: ", serverPort);
+                console.log("Request Sent");
             }
         });
         // サーバからの応答を待つ
         // console.log('Waiting to receive');
         this.socket.on('message', function (receivedMessage, info) {
-            console.log("Hello world");
             console.log("Received result: \"".concat(receivedMessage, "\" from ").concat(info.address, ":").concat(info.port));
             // ソケットを閉じてリソースを解放
             _this.socket.close();

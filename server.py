@@ -20,11 +20,11 @@ class Server:
         print(f"Server is running on {serverIP}:{serverPort}")
         
 
-    def bind(self):
+    def bind(self) -> None:
         self.socket.bind(self.address)
 
-
-    def parseToDict(self, data):
+    @staticmethod
+    def parseToDict(data) -> dict:
         # バイトデータを文字列に変換
         jsonString = data.decode('utf-8')
         # 文字列データをディクショナリに変換
@@ -37,12 +37,12 @@ class Server:
             return None
         
 
-    def receiveRequest(self):
+    def receiveRequest(self) -> None:
         while True:
             print('\nwaiting to recieve massege')
             data, address = self.socket.recvfrom(self.maximumDataSize)
             # JSONデータを受け取るので、JSオブジェクトにパースする必要がある
-            dictData = self.parseToDict(data)
+            dictData = Server.parseToDict(data)
             assert dictData != None, "Error Occured at converting dict data"
             print('received {} bytes from {}'.format(len(dictData), address[0]))
             if dictData["id"] > len(self.clients) or len(dictData) > self.maximumDataSize:
@@ -58,54 +58,51 @@ class Server:
                 sent = self.socket.sendto(response.encode(), address)
                 print('sent {} bytes back to {}'.format(sent, address))
 
+    @staticmethod
+    def validateParamsType(paramTypes, expectedParamTypes) -> bool:
+        return paramTypes == expectedParamTypes
 
-    def validateParamsType(self, paramTypes, expectedParamTypes):
-        if len(paramTypes) != len(expectedParamTypes): return False 
-        for paramT, expect in zip(paramTypes, expectedParamTypes):
-            if paramT != expect: return False
-        return True
-
-
-    def createResponse(self, data):
+    @staticmethod
+    def createResponse(data) -> str:
         # floor(double x): 10 進数 x を最も近い整数に切り捨て、その結果を整数で返す。
         # nroot(int n, int x): 方程式 rn = x における、r の値を計算する。
         # reverse(string s): 文字列 s を入力として受け取り、入力文字列の逆である新しい文字列を返す。
         # validAnagram(string str1, string str2): 2 つの文字列を入力として受け取り，2 つの入力文字列が互いにアナグラムであるかどうかを示すブール値を返す。
         # sort(string[] strArr): 文字列の配列を入力として受け取り、その配列をソートして、ソート後の文字列の配列を返す。
-        methodName = data["method"]
-        result = None
+        
+        # ディクショナリを用意して関数を管理する。関数名をキーに。値を[0]=適切なパラメーター群, [1]=ラムダ関数とする。
+        methods = {
+            "floor": (["number"], lambda params: math.floor(params[0])),
+            "nroot": (["number", "number"], lambda params: Server.nroot(params[0], params[1])),
+            "reverse": (["string"], lambda params: Server.reverse(params[0])),
+            "validAnagram": (["string", "string"], lambda params: Server.validAnagram(params[0], params[1])),
+            "sort": (["object"], lambda params: Server.sort(params[0]))
+        }
 
-        if methodName == "floor":
-            assert self.validateParamsType(data["param_types"], ["number"]), "Error Occured at executing method"
-            result = math.floor(data["params"][0])
-        elif methodName == "nroot":
-            assert self.validateParamsType(data["param_types"], ["number", "number"]), "Error Occured at executing method"
-            result = self.nroot(data["params"][0], data["params"][1])
-        elif methodName == "reverse":
-            assert self.validateParamsType(data["param_types"], ["string"]), "Error Occured at executing method"
-            result = self.reverse(data["params"][0])
-        elif methodName == "validAnagram":
-            assert self.validateParamsType(data["param_types"], ["string", "string"]), "Error Occured at executing method"
-            result = self.validAnagram(data["params"][0], data["params"][1])
-        elif methodName == "sort":
-            assert self.validateParamsType(data["param_types"], ["object"]), "Error Occured at executing method"
-            result = self.sort(data["params"][0])
+        methodName = data["method"]
+
+        if methodName in methods:
+            assert Server.validateParamsType(data["param_types"], methods[methodName][0]), "Error Occured at executing method"
+            result = methods[methodName][1](data["params"])
+        else:
+            return json.dumps({"error": "Unknown method"})
         # あらゆる構造のデータをJSON形式にエンコーディングする→dumpsを使う
         return json.dumps(result)
 
-    def nroot(self, n, x):
+    @staticmethod
+    def nroot(n, x) -> float:
         return x / n
     
-
-    def reverse(self, s):
+    @staticmethod
+    def reverse(s) -> str:
         return s[::-1]
     
-
-    def validAnagram(self, s, t):
+    @staticmethod
+    def validAnagram(s, t) -> bool:
         if len(s) != len(t):
             return False
         return sorted(s) == sorted(t)
 
-
-    def sort(self, arr):
+    @staticmethod
+    def sort(arr) -> list:
         return sorted(arr)
