@@ -5,6 +5,7 @@ const serverAddress: string = '127.0.0.1';
 const serverPort: number = 5000; // サーバーのポート番号
 
 export class Client{
+    // クラス変数とも呼ぶみたい
     static clientsCount: number = 1;
 
     public id: number;
@@ -22,21 +23,36 @@ export class Client{
         this.bind(inputMsg);
     }
 
+    // rpc(関数名, 引数1, 引数2, ..., 引数n)
+    public rpc(methodName:string, ...params: any[]) :void{
+        const methodObj = {
+            "method": methodName,
+            "params": params,
+            "param_types": params.map(param => typeof param),
+            "id": this.id
+        };
+
+        const jsonData = JSON.stringify(methodObj);
+
+        this.bind(Buffer.from(jsonData));
+    }
+
+
     public bind(msg: Buffer){
-        console.log(`Sending message: "${msg}" to ${serverAddress}`);
+        console.log(`Sending request: "${msg}" to ${serverAddress}`);
         this.socket.send(msg, 0, msg.length, serverPort, serverAddress, (err) => {
             if(err){
                 console.log("Send Error: ", err);
             }else{
-                console.log("Message Sent.");
+                console.log("Request Sent");
             }
         })
 
         // サーバからの応答を待つ
-        console.log('Waiting to receive');
+        // console.log('Waiting to receive');
 
         this.socket.on('message', (receivedMessage: Buffer, info: dgram.RemoteInfo) => {
-            console.log(`Received message: "${receivedMessage}" from ${info.address}:${info.port}`);
+            console.log(`Received result: "${receivedMessage}" from ${info.address}:${info.port}`);
 
             // ソケットを閉じてリソースを解放
             this.socket.close();

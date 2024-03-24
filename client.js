@@ -12,29 +12,46 @@ var Client = /** @class */ (function () {
     }
     Client.prototype.sendMessage = function () {
         var prompt = require("prompt-sync")({ sigint: true });
-        var inputMsg = Buffer.from(prompt("Send a message to server "));
+        var inputMsg = Buffer.from(prompt("Send a message to server"));
         this.bind(inputMsg);
+    };
+    // rpc(関数名, 引数1, 引数2, ..., 引数n)
+    Client.prototype.rpc = function (methodName) {
+        var params = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            params[_i - 1] = arguments[_i];
+        }
+        var methodObj = {
+            "method": methodName,
+            "params": params,
+            "param_types": params.map(function (param) { return typeof param; }),
+            "id": this.id
+        };
+        var jsonData = JSON.stringify(methodObj);
+        this.bind(Buffer.from(jsonData));
     };
     Client.prototype.bind = function (msg) {
         var _this = this;
-        console.log("Sending message: \"".concat(msg, "\" to ").concat(serverAddress));
+        console.log("Sending request: \"".concat(msg, "\" to ").concat(serverAddress));
         this.socket.send(msg, 0, msg.length, serverPort, serverAddress, function (err) {
             if (err) {
                 console.log("Send Error: ", err);
             }
             else {
-                console.log("Message Sent.");
+                console.log("Request Sent: ", serverPort);
             }
         });
         // サーバからの応答を待つ
-        console.log('Waiting to receive');
+        // console.log('Waiting to receive');
         this.socket.on('message', function (receivedMessage, info) {
-            console.log("Received message: \"".concat(receivedMessage, "\" from ").concat(info.address, ":").concat(info.port));
+            console.log("Hello world");
+            console.log("Received result: \"".concat(receivedMessage, "\" from ").concat(info.address, ":").concat(info.port));
             // ソケットを閉じてリソースを解放
             _this.socket.close();
             console.log('Socket closed');
         });
     };
+    // クラス変数とも呼ぶみたい
     Client.clientsCount = 1;
     return Client;
 }());
